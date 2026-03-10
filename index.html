@@ -1,0 +1,1382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sales Command Center</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c10;
+    --surface: #12151c;
+    --surface2: #1a1f2b;
+    --border: #232838;
+    --accent: #4ade80;
+    --accent2: #38bdf8;
+    --accent3: #f59e0b;
+    --accent4: #f87171;
+    --accent5: #a78bfa;
+    --text: #e8ecf4;
+    --text2: #8892a4;
+    --text3: #555f74;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    font-size: 14px;
+  }
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 18px;
+    letter-spacing: -0.5px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .header-title .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 12px var(--accent);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+  .header-meta {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--text3);
+    display: flex;
+    gap: 20px;
+  }
+  .nav-tabs {
+    display: flex;
+    gap: 2px;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+  }
+  .nav-tab {
+    font-family: 'Syne', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    padding: 14px 20px;
+    cursor: pointer;
+    color: var(--text3);
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+  }
+  .nav-tab:hover { color: var(--text); }
+  .nav-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .page { display: none; padding: 28px 32px; }
+  .page.active { display: block; }
+  
+  /* Grid system */
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .section-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--text3);
+    margin-bottom: 16px;
+    margin-top: 28px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+  
+  /* Cards */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .card:hover::before { opacity: 0.6; }
+  .card-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text3);
+    margin-bottom: 8px;
+  }
+  .card-value {
+    font-family: 'Syne', sans-serif;
+    font-size: 32px;
+    font-weight: 800;
+    color: var(--text);
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+  .card-sub {
+    font-size: 12px;
+    color: var(--text2);
+  }
+  .card-accent { color: var(--accent); }
+  .card-accent2 { color: var(--accent2); }
+  .card-accent3 { color: var(--accent3); }
+  .card-accent4 { color: var(--accent4); }
+  .card-accent5 { color: var(--accent5); }
+  .card-icon {
+    position: absolute;
+    right: 20px;
+    top: 20px;
+    font-size: 24px;
+    opacity: 0.15;
+  }
+
+  /* Status badge */
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-family: 'DM Mono', monospace;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+  }
+  .badge-green { background: rgba(74,222,128,0.12); color: var(--accent); border: 1px solid rgba(74,222,128,0.2); }
+  .badge-blue { background: rgba(56,189,248,0.12); color: var(--accent2); border: 1px solid rgba(56,189,248,0.2); }
+  .badge-amber { background: rgba(245,158,11,0.12); color: var(--accent3); border: 1px solid rgba(245,158,11,0.2); }
+  .badge-red { background: rgba(248,113,113,0.12); color: var(--accent4); border: 1px solid rgba(248,113,113,0.2); }
+  .badge-purple { background: rgba(167,139,250,0.12); color: var(--accent5); border: 1px solid rgba(167,139,250,0.2); }
+  .badge-gray { background: rgba(88,100,120,0.2); color: var(--text3); border: 1px solid rgba(88,100,120,0.3); }
+
+  /* Bar chart */
+  .bar-chart { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+  .bar-row { display: flex; align-items: center; gap: 10px; }
+  .bar-label { font-size: 11px; color: var(--text2); min-width: 170px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bar-track { flex: 1; height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 3px; transition: width 0.8s ease; }
+  .bar-val { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text3); min-width: 60px; text-align: right; }
+
+  /* Deal table */
+  .deal-table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+  .deal-table th {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text3);
+    padding: 8px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  .deal-table td {
+    padding: 10px 12px;
+    font-size: 12px;
+    border-bottom: 1px solid rgba(35,40,56,0.5);
+    vertical-align: middle;
+  }
+  .deal-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .deal-name { font-weight: 500; color: var(--text); }
+  .deal-name a { color: var(--accent2); text-decoration: none; font-family: 'DM Mono', monospace; font-size: 10px; }
+  .deal-name a:hover { text-decoration: underline; }
+  .money { font-family: 'DM Mono', monospace; }
+  .stage-indicator { display: flex; gap: 4px; align-items: center; }
+  .stage-dot { width: 6px; height: 6px; border-radius: 50%; }
+
+  /* Days in stage */
+  .days-pill {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    font-weight: 500;
+  }
+  .days-ok { background: rgba(74,222,128,0.1); color: var(--accent); }
+  .days-warn { background: rgba(245,158,11,0.1); color: var(--accent3); }
+  .days-alert { background: rgba(248,113,113,0.1); color: var(--accent4); }
+
+  /* Donut chart */
+  .donut-wrap { position: relative; width: 140px; height: 140px; }
+  svg.donut { width: 100%; height: 100%; transform: rotate(-90deg); }
+  .donut-center {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+  }
+  .donut-center-val { font-family: 'Syne', sans-serif; font-size: 24px; font-weight: 800; }
+  .donut-center-sub { font-size: 10px; color: var(--text3); font-family: 'DM Mono', monospace; }
+  .donut-legend { display: flex; flex-direction: column; gap: 8px; }
+  .legend-item { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .legend-name { color: var(--text2); flex: 1; }
+  .legend-val { font-family: 'DM Mono', monospace; color: var(--text); }
+
+  /* Timeline close date viz */
+  .timeline { margin-top: 12px; position: relative; }
+  .timeline-month { margin-bottom: 16px; }
+  .timeline-month-header {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--text3);
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .timeline-deals { display: flex; flex-wrap: wrap; gap: 6px; }
+  .timeline-deal {
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    border: 1px solid;
+    cursor: default;
+    transition: transform 0.1s;
+  }
+  .timeline-deal:hover { transform: translateY(-1px); }
+  .timeline-deal .td-name { font-weight: 500; margin-bottom: 2px; }
+  .timeline-deal .td-amount { font-family: 'DM Mono', monospace; font-size: 10px; opacity: 0.8; }
+
+  /* Progress ring */
+  .progress-ring-wrap { position: relative; display: inline-block; }
+  svg.ring { transform: rotate(-90deg); }
+  .ring-center {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+  }
+
+  /* Activity feed */
+  .activity-list { display: flex; flex-direction: column; gap: 1px; margin-top: 12px; }
+  .activity-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    transition: background 0.15s;
+  }
+  .activity-item:hover { background: var(--surface2); }
+  .activity-icon {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+  .activity-body { flex: 1; }
+  .activity-name { font-size: 12px; font-weight: 500; color: var(--text); }
+  .activity-meta { font-size: 11px; color: var(--text3); margin-top: 2px; font-family: 'DM Mono', monospace; }
+  .activity-right { text-align: right; }
+  .activity-count { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700; }
+  .activity-target { font-size: 10px; color: var(--text3); font-family: 'DM Mono', monospace; }
+
+  /* Insight callout */
+  .insight {
+    background: linear-gradient(135deg, rgba(74,222,128,0.06), rgba(56,189,248,0.06));
+    border: 1px solid rgba(74,222,128,0.15);
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-top: 16px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .insight-icon { font-size: 18px; flex-shrink: 0; }
+  .insight-text { font-size: 12px; color: var(--text2); line-height: 1.6; }
+  .insight-text strong { color: var(--accent); }
+  
+  .insight-warn {
+    background: linear-gradient(135deg, rgba(245,158,11,0.06), rgba(248,113,113,0.06));
+    border-color: rgba(245,158,11,0.15);
+  }
+  .insight-warn .insight-text strong { color: var(--accent3); }
+
+  /* KPI row */
+  .kpi-row {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+  .kpi-mini {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .kpi-mini-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text3);
+    margin-bottom: 6px;
+  }
+  .kpi-mini-val {
+    font-family: 'Syne', sans-serif;
+    font-size: 22px;
+    font-weight: 800;
+    line-height: 1;
+  }
+  .kpi-mini-sub { font-size: 10px; color: var(--text3); margin-top: 4px; }
+
+  /* Target vs actual */
+  .tva-row { display: flex; align-items: center; gap: 12px; margin-top: 10px; }
+  .tva-label { font-size: 11px; color: var(--text3); width: 70px; font-family: 'DM Mono', monospace; }
+  .tva-bar { flex: 1; height: 8px; background: var(--surface2); border-radius: 4px; overflow: hidden; }
+  .tva-fill { height: 100%; border-radius: 4px; }
+  .tva-vals { font-family: 'DM Mono', monospace; font-size: 11px; width: 80px; text-align: right; }
+
+  /* Call outcome chart */
+  .outcome-grid { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+  .outcome-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: var(--surface2);
+  }
+  .outcome-icon { font-size: 16px; width: 28px; text-align: center; }
+  .outcome-name { flex: 1; font-size: 12px; }
+  .outcome-count { font-family: 'DM Mono', monospace; font-size: 14px; font-weight: 500; }
+  .outcome-pct { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--text3); min-width: 36px; text-align: right; }
+  .outcome-track { width: 80px; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+  .outcome-fill { height: 100%; border-radius: 2px; }
+
+  /* Lead pipeline funnel */
+  .funnel { display: flex; flex-direction: column; gap: 4px; margin-top: 12px; }
+  .funnel-step {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+  }
+  .funnel-step-name { flex: 1; font-size: 12px; font-weight: 500; }
+  .funnel-step-count { font-family: 'DM Mono', monospace; font-size: 14px; font-weight: 600; min-width: 32px; text-align: right; }
+  .funnel-step-bar { width: 120px; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+  .funnel-step-fill { height: 100%; border-radius: 2px; }
+
+  /* Weekly calendar */
+  .week-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-top: 12px; }
+  .week-day { text-align: center; }
+  .week-day-name { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--text3); margin-bottom: 4px; }
+  .week-day-count {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    border: 1px solid var(--border);
+  }
+  .week-day-count.hit { background: rgba(74,222,128,0.15); border-color: rgba(74,222,128,0.3); color: var(--accent); }
+  .week-day-count.miss { background: rgba(248,113,113,0.1); border-color: rgba(248,113,113,0.2); color: var(--accent4); }
+  .week-day-count.partial { background: rgba(245,158,11,0.1); border-color: rgba(245,158,11,0.2); color: var(--accent3); }
+  .week-day-count.empty { color: var(--text3); }
+
+  /* Leads table */
+  .leads-table { width: 100%; border-collapse: collapse; }
+  .leads-table th {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text3);
+    padding: 8px 10px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  .leads-table td {
+    padding: 9px 10px;
+    font-size: 12px;
+    border-bottom: 1px solid rgba(35,40,56,0.4);
+    vertical-align: middle;
+  }
+  .leads-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .touch-bar { display: flex; gap: 3px; }
+  .touch-dot { width: 8px; height: 8px; border-radius: 2px; background: var(--accent); opacity: 0.3; }
+  .touch-dot.filled { opacity: 1; }
+  .touch-dot.overfull { background: var(--accent5); opacity: 1; }
+
+  /* Responsive scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  .col-2 { grid-column: span 2; }
+  .col-3 { grid-column: span 3; }
+  .flex-row { display: flex; gap: 16px; align-items: flex-start; }
+  .flex-col { display: flex; flex-direction: column; gap: 16px; }
+
+  .page-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 22px;
+    font-weight: 800;
+    margin-bottom: 4px;
+    letter-spacing: -0.5px;
+  }
+  .page-subtitle { font-size: 13px; color: var(--text3); margin-bottom: 20px; }
+
+  .divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+
+  .overflow-x { overflow-x: auto; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-title">
+    <div class="dot"></div>
+    Sales Command Center
+  </div>
+  <div class="header-meta">
+    <span>Last updated: Mar 9, 2026</span>
+    <span>Loop ERP + CEBA Pipelines</span>
+  </div>
+</div>
+
+<div class="nav-tabs">
+  <div class="nav-tab active" onclick="switchTab('loop')">🔵 Loop ERP Pipeline</div>
+  <div class="nav-tab" onclick="switchTab('ceba')">🟣 CEBA Pipeline</div>
+  <div class="nav-tab" onclick="switchTab('sdr')">📞 SDR Activity — Caleb</div>
+  <div class="nav-tab" onclick="switchTab('leads')">🌱 Lead Dashboard</div>
+</div>
+
+<!-- ===== LOOP ERP PIPELINE ===== -->
+<div id="tab-loop" class="page active">
+  <div class="page-title">Loop ERP Deal Pipeline</div>
+  <div class="page-subtitle">Open deals only · Ryan McQuillan · As of March 9, 2026</div>
+
+  <!-- KPIs -->
+  <div class="kpi-row">
+    <div class="kpi-mini">
+      <div class="kpi-mini-label">Open Deals</div>
+      <div class="kpi-mini-val card-accent">13</div>
+      <div class="kpi-mini-sub">Active opportunities</div>
+    </div>
+    <div class="kpi-mini">
+      <div class="kpi-mini-label">Total Pipeline Value</div>
+      <div class="kpi-mini-val card-accent2">$505K</div>
+      <div class="kpi-mini-sub">Open deal amount</div>
+    </div>
+    <div class="kpi-mini">
+      <div class="kpi-mini-label">Weighted Pipeline</div>
+      <div class="kpi-mini-val card-accent3">$191K</div>
+      <div class="kpi-mini-sub">Probability-adjusted</div>
+    </div>
+    <div class="kpi-mini">
+      <div class="kpi-mini-label">Avg Deal Size</div>
+      <div class="kpi-mini-val card-accent5">$38.8K</div>
+      <div class="kpi-mini-sub">Per open deal</div>
+    </div>
+    <div class="kpi-mini">
+      <div class="kpi-mini-label">Deals This Month</div>
+      <div class="kpi-mini-val card-accent">7</div>
+      <div class="kpi-mini-sub">Created in March</div>
+    </div>
+  </div>
+
+  <div class="grid-2" style="margin-top:0">
+    <!-- Stage Breakdown -->
+    <div class="card">
+      <div class="card-label">Deals by Stage</div>
+      <div class="bar-chart">
+        <div class="bar-row">
+          <div class="bar-label">New Deal</div>
+          <div class="bar-track"><div class="bar-fill" style="width:23.1%;background:var(--accent2)"></div></div>
+          <div class="bar-val card-accent2">3 · $140K</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Req. Analysis Complete</div>
+          <div class="bar-track"><div class="bar-fill" style="width:30.8%;background:var(--accent)"></div></div>
+          <div class="bar-val card-accent">4 · $110K</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Deep Dive Demo Booked</div>
+          <div class="bar-track"><div class="bar-fill" style="width:23.1%;background:var(--accent3)"></div></div>
+          <div class="bar-val card-accent3">3 · $110K</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Deep Dive Demo Complete</div>
+          <div class="bar-track"><div class="bar-fill" style="width:7.7%;background:var(--accent5)"></div></div>
+          <div class="bar-val card-accent5">1 · $45K</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Add'l Education & Align.</div>
+          <div class="bar-track"><div class="bar-fill" style="width:15.4%;background:var(--accent4)"></div></div>
+          <div class="bar-val card-accent4">2 · $100K</div>
+        </div>
+      </div>
+      <div class="insight" style="margin-top:16px">
+        <div class="insight-icon">💡</div>
+        <div class="insight-text">
+          <strong>Pipeline concentration:</strong> 7 of 13 deals are in early stages (New Deal / Req Analysis Complete). Push these through to Demo stage to maintain healthy pipeline velocity.
+        </div>
+      </div>
+    </div>
+
+    <!-- Close Date Visual -->
+    <div class="card">
+      <div class="card-label">Close Date Distribution</div>
+      <div class="timeline">
+        <div class="timeline-month">
+          <div class="timeline-month-header">
+            <span>MARCH 2026 — URGENT</span>
+            <span class="card-accent4">2 deals · $105K</span>
+          </div>
+          <div class="timeline-deals">
+            <div class="timeline-deal" style="background:rgba(248,113,113,0.08);border-color:rgba(248,113,113,0.25)">
+              <div class="td-name">Enviroo Project Co.</div>
+              <div class="td-amount">$40K · Mar 31</div>
+            </div>
+            <div class="timeline-deal" style="background:rgba(248,113,113,0.08);border-color:rgba(248,113,113,0.25)">
+              <div class="td-name">STSS · Strategic Telecom</div>
+              <div class="td-amount">$60K · Mar 31</div>
+            </div>
+          </div>
+        </div>
+        <div class="timeline-month">
+          <div class="timeline-month-header">
+            <span>APRIL 2026</span>
+            <span class="card-accent3">2 deals · $75K</span>
+          </div>
+          <div class="timeline-deals">
+            <div class="timeline-deal" style="background:rgba(245,158,11,0.08);border-color:rgba(245,158,11,0.2)">
+              <div class="td-name">Langer Industrial</div>
+              <div class="td-amount">$30K · Apr 10</div>
+            </div>
+            <div class="timeline-deal" style="background:rgba(245,158,11,0.08);border-color:rgba(245,158,11,0.2)">
+              <div class="td-name">Globe Metal</div>
+              <div class="td-amount">$50K · Apr 30</div>
+            </div>
+          </div>
+        </div>
+        <div class="timeline-month">
+          <div class="timeline-month-header">
+            <span>MAY–JUNE 2026</span>
+            <span class="card-accent">7 deals · $290K</span>
+          </div>
+          <div class="timeline-deals">
+            <div class="timeline-deal" style="background:rgba(74,222,128,0.06);border-color:rgba(74,222,128,0.15)">
+              <div class="td-name">ViaTeK Solutions</div>
+              <div class="td-amount">$45K · Mar 31</div>
+            </div>
+            <div class="timeline-deal" style="background:rgba(74,222,128,0.06);border-color:rgba(74,222,128,0.15)">
+              <div class="td-name">C&D Scrap Metal</div>
+              <div class="td-amount">$40K · May 25</div>
+            </div>
+            <div class="timeline-deal" style="background:rgba(74,222,128,0.06);border-color:rgba(74,222,128,0.15)">
+              <div class="td-name">AJ Recycling Solutions</div>
+              <div class="td-amount">$30K · May 25</div>
+            </div>
+            <div class="timeline-deal" style="background:rgba(74,222,128,0.06);border-color:rgba(74,222,128,0.15)">
+              <div class="td-name">Outlast Inc.</div>
+              <div class="td-amount">$30K · May 13</div>
+            </div>
+            <div class="timeline-deal" style="background:rgba(56,189,248,0.06);border-color:rgba(56,189,248,0.15)">
+              <div class="td-name">Gemini Corporation</div>
+              <div class="td-amount">$30K · Jul 31</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-label">Deal Tracker — Time in Stage</div>
+  <div class="card overflow-x">
+    <table class="deal-table">
+      <thead>
+        <tr>
+          <th>Deal Name</th>
+          <th>Stage</th>
+          <th>Amount</th>
+          <th>Weighted</th>
+          <th>Close Date</th>
+          <th>Days in Stage</th>
+          <th>Stage Risk</th>
+          <th>Owner</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><div class="deal-name">Enviroo Project Co.<br><a href="https://app.hubspot.com/contacts/243159630/record/0-3/246937391823" target="_blank">↗ HubSpot</a></div></td>
+          <td><span class="badge badge-purple">Add'l Education & Align.</span></td>
+          <td class="money">$40,000</td>
+          <td class="money card-accent">$28,000</td>
+          <td class="money card-accent4">Mar 31, 2026</td>
+          <td><span class="days-pill days-alert">~76 days</span></td>
+          <td><span class="badge badge-red">⚠ Stalled</span></td>
+          <td>Ryan</td>
+        </tr>
+        <tr>
+          <td><div class="deal-name">STSS Strategic Telecom<br><a href="https://app.hubspot.com/contacts/243159630/record/0-3/207662035686" target="_blank">↗ HubSpot</a></div></td>
+          <td><span class="badge badge-purple">Add'l Education & Align.</span></td>
+          <td class="money">$60,000</td>
+          <td class="money card-accent">$42,000</td>
+          <td class="money card-accent4">Mar 31, 2026</td>
+          <td><span class="days-pill days-alert">~125 days</span></td>
+          <td><span class="badge badge-red">⚠ Critical</span></td>
+          <td>Ryan</td>
+        </tr>
+        <tr>
+          <td><div class="deal-name">ViaTeK Solutions<br><a href="https://app.hubspot.com/contacts/243159630/record/0-3/227660510923" target="_blank">↗ HubSpot</a></div></td>
+          <td><span class="badge badge-green">Deep Dive Demo Complete</span></td>
+          <td class="money">$45,000</td>
+          <td class="money card-accent">$20,250</td>
+          <td class="money card-accent4">Mar 31, 2026</td>
+          <td><span class="days-pill days-warn">~103 days</span></td>
+          <td><span class="badge badge-amber">Watch</span></td>
+          <td>Ryan</td>
+        </tr>
+        <tr>
+          <td><div class="deal-name">Globe Metal<br><a href="https://app.hubspot.com/contacts/243159630/record/0-3/288903902917" target="_blank">↗ HubSpot</a></div></td>
+          <td><span class="badge badge-blue">Deep Dive Demo Booked</span></td>
+          <td class="money">$50,000</td>
+          <td class="money">$20,000</td>
+          <td class="money card-accent3">Apr 30, 2026</td>
+          <td><span class="days-pill days-warn">31 days</span></td>
+          <td><span class="badge badge-amber">Watch</span></td>
+          <td>Ryan</td>
+        </tr>
+        <tr>
+          <td><div class="deal-name">Metalum<br><a href="https://app.hubspot.com/contacts/243159630/record/0-3/302579429095" target="_blank">↗ HubSpot</a></div></td>
+          <td><span class="badge badge-amber">Req. Analysis Complete</span></td>
+          <td class="money">$40,000</td>
+          <td class="money">$12,000</td>
+          <td class="money">May 29, 2026</td>
+          <td><span class="days-pill days-warn">17 days</span></td>
+          <td><span class="badge badge-blue">On Track</span></td>
+          <td>Ryan</td>
+        </tr>
+        <tr>
+          <td><div class="deal-name">AJ Recycling Solutions<br><a href="https://app.hubspot.com/contacts/243159630/record/0-3/305111678654" target="_blank">↗ HubSpot</a></div></td>
+          <td><span class="badge badge-amber">Req. Analysis Complete</span></td>
+          <td class="money">$30,000</td>
+          <td class="money">$9,000</td>
+          <td class="money">May 25, 2026</td>
+          <td><span class="days-pill days-warn">13 days</span></td>
+          <td><span class="badge badge-blue">On Track</span></td>
+          <td>Ryan</td>
+        </tr>
+        <tr>
+          <td><div class="deal-name">C&D Scrap Metal<br><a href="https://app.hubspot.com/contacts/243159630/record/0-3/304631728879" target="_blank">↗ HubSpot</a></div></td>
+          <td><span class="badge badge-blue">Deep Dive Demo Booked</span></td>
+          <td class="money">$40,000</td>
+          <td class="money">$16,000</td>
+          <td class="money">May 25, 2026</td>
+          <td><span class="days-pill days-ok">13 days</span></td>
+          <td><span class="badge badge-green">Healthy</span></td>
+          <td>Ryan</td>
+        </tr>
+        <tr>
+          <td><div class="deal-name">Bright Metals<br><a href="https://app.hubspot.com/contacts/243159630/record/0-3/307178061537" target="_blank">↗ HubSpot</a></div></td>
+          <td><span class="badge badge-amber">Req. Analysis Complete</span></td>
+          <td class="money">$60,000</td>
+          <td class="money">$12,000</td>
+          <td class="money">May 29, 2026</td>
+          <td><span class="days-pill days-ok">10 days</span></td>
+          <td><span class="badge badge-green">Healthy</span></td>
+          <td>Ryan</td>
+        </tr>
+        <tr>
+          <td><div class="deal-name">Langer Industrial<br><a href="https://app.hubspot.com/contacts/243159630/record/0-3/309858900680" target="_blank">↗ HubSpot</a></div></td>
+          <td><span class="badge badge-amber">Req. Analysis Complete</span></td>
+          <td class="money">$30,000</td>
+          <td class="money">$9,000</td>
+          <td class="money card-accent3">Apr 10, 2026</td>
+          <td><span class="days-pill days-ok">7 days</span></td>
+          <td><span class="badge badge-green">Healthy</span></td>
+          <td>Ryan</td>
+        </tr>
+        <tr>
+          <td><div class="deal-name">Metal Recycling Corp.<br><a href="https://app.hubspot.com/contacts/243159630/record/0-3/306864859866" target="_blank">↗ HubSpot</a></div></td>
+          <td><span class="badge badge-gray">New Deal</span></td>
+          <td class="money">$70,000</td>
+          <td class="money">$7,000</td>
+          <td class="money">May 29, 2026</td>
+          <td><span class="days-pill days-ok">10 days</span></td>
+          <td><span class="badge badge-green">Healthy</span></td>
+          <td>Ryan</td>
+        </tr>
+        <tr>
+          <td><div class="deal-name">Gemini Corporation<br><a href="https://app.hubspot.com/contacts/243159630/record/0-3/306429035254" target="_blank">↗ HubSpot</a></div></td>
+          <td><span class="badge badge-gray">New Deal</span></td>
+          <td class="money">$30,000</td>
+          <td class="money">$3,000</td>
+          <td class="money">Jul 31, 2026</td>
+          <td><span class="days-pill days-ok">11 days</span></td>
+          <td><span class="badge badge-green">Healthy</span></td>
+          <td>Ryan</td>
+        </tr>
+        <tr>
+          <td><div class="deal-name">Outlast Inc.<br><a href="https://app.hubspot.com/contacts/243159630/record/0-3/295238331079" target="_blank">↗ HubSpot</a></div></td>
+          <td><span class="badge badge-gray">New Deal</span></td>
+          <td class="money">$30,000</td>
+          <td class="money">$3,000</td>
+          <td class="money">May 13, 2026</td>
+          <td><span class="days-pill days-warn">25 days</span></td>
+          <td><span class="badge badge-amber">Watch</span></td>
+          <td>Ryan</td>
+        </tr>
+        <tr>
+          <td><div class="deal-name">Mandolé Orchard<br><a href="https://app.hubspot.com/contacts/243159630/record/0-3/311950632684" target="_blank">↗ HubSpot</a></div></td>
+          <td><span class="badge badge-blue">Deep Dive Demo Booked</span></td>
+          <td class="money">$20,000</td>
+          <td class="money">$8,000</td>
+          <td class="money">Jun 3, 2026</td>
+          <td><span class="days-pill days-ok">4 days</span></td>
+          <td><span class="badge badge-green">Healthy</span></td>
+          <td>Ryan</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="insight insight-warn" style="margin-top:16px">
+    <div class="insight-icon">🔥</div>
+    <div class="insight-text">
+      <strong>Pipeline meeting priorities:</strong> (1) STSS Telecom has been in "Additional Education & Alignment" for 125 days — needs a next step or loss declared. (2) Enviroo closes Mar 31 and has been stalled 76 days — push for proposal or commitment. (3) ViaTeK closes Mar 31 after 103 days post-demo — proposal should be sent. (4) $105K closes this month; confirm status of all March deals immediately.
+    </div>
+  </div>
+</div>
+
+<!-- ===== CEBA PIPELINE ===== -->
+<div id="tab-ceba" class="page">
+  <div class="page-title">CEBA (NS Net New) Deal Pipeline</div>
+  <div class="page-subtitle">Open deals only · Ryan McQuillan · As of March 9, 2026</div>
+
+  <div class="kpi-row">
+    <div class="kpi-mini">
+      <div class="kpi-mini-label">Open Deals</div>
+      <div class="kpi-mini-val card-accent5">2</div>
+      <div class="kpi-mini-sub">Active opportunities</div>
+    </div>
+    <div class="kpi-mini">
+      <div class="kpi-mini-label">Total Pipeline Value</div>
+      <div class="kpi-mini-val card-accent2">$100K</div>
+      <div class="kpi-mini-sub">Open deal amount</div>
+    </div>
+    <div class="kpi-mini">
+      <div class="kpi-mini-label">Weighted Pipeline</div>
+      <div class="kpi-mini-val card-accent3">$40K</div>
+      <div class="kpi-mini-sub">Probability-adjusted</div>
+    </div>
+    <div class="kpi-mini">
+      <div class="kpi-mini-label">Closed Won (All Time)</div>
+      <div class="kpi-mini-val card-accent">$204K</div>
+      <div class="kpi-mini-sub">4 deals closed won</div>
+    </div>
+    <div class="kpi-mini">
+      <div class="kpi-mini-label">Win Rate (Historical)</div>
+      <div class="kpi-mini-val card-accent4">50%</div>
+      <div class="kpi-mini-sub">4W / 4L (closed)</div>
+    </div>
+  </div>
+
+  <div class="grid-2" style="margin-top:0">
+    <div class="card">
+      <div class="card-label">Stage Breakdown</div>
+      <div class="bar-chart">
+        <div class="bar-row">
+          <div class="bar-label">New Deal</div>
+          <div class="bar-track"><div class="bar-fill" style="width:50%;background:var(--accent2)"></div></div>
+          <div class="bar-val card-accent2">1 · $50K</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Add'l Education & Align.</div>
+          <div class="bar-track"><div class="bar-fill" style="width:50%;background:var(--accent5)"></div></div>
+          <div class="bar-val card-accent5">1 · $50K</div>
+        </div>
+      </div>
+      <div class="insight insight-warn" style="margin-top:16px">
+        <div class="insight-icon">⚠️</div>
+        <div class="insight-text">
+          <strong>Thin pipeline — only 2 active deals.</strong> The CEBA pipe needs new deal entry. Oxide Computer is overdue for close (original close: Feb 6, 2026) and has been progressing — confirm next steps urgently.
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Close Date Distribution</div>
+      <div class="timeline">
+        <div class="timeline-month">
+          <div class="timeline-month-header">
+            <span>OVERDUE / ACTIVE</span>
+            <span class="card-accent4">1 deal · $50K</span>
+          </div>
+          <div class="timeline-deals">
+            <div class="timeline-deal" style="background:rgba(248,113,113,0.1);border-color:rgba(248,113,113,0.3)">
+              <div class="td-name">Oxide Computer — New Deal</div>
+              <div class="td-amount">$50K · Was Feb 6, 2026 → Push date</div>
+            </div>
+          </div>
+        </div>
+        <div class="timeline-month">
+          <div class="timeline-month-header">
+            <span>MAY 2026</span>
+            <span class="card-accent">1 deal · $50K</span>
+          </div>
+          <div class="timeline-deals">
+            <div class="timeline-deal" style="background:rgba(74,222,128,0.06);border-color:rgba(74,222,128,0.15)">
+              <div class="td-name">MJ Holding — New Deal</div>
+              <div class="td-amount">$50K · May 29, 2026</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-label">Deal Tracker — Time in Stage</div>
+  <div class="card overflow-x">
+    <table class="deal-table">
+      <thead>
+        <tr>
+          <th>Deal Name</th>
+          <th>Stage</th>
+          <th>Amount</th>
+          <th>Weighted</th>
+          <th>Prob.</th>
+          <th>Close Date</th>
+          <th>Days in Stage</th>
+          <th>Stage Risk</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><div class="deal-name">Oxide Computer — New Deal<br><a href="https://app.hubspot.com/contacts/243159630/record/0-3/253070201592" target="_blank">↗ HubSpot</a></div></td>
+          <td><span class="badge badge-purple">Add'l Education & Align.</span></td>
+          <td class="money">$50,000</td>
+          <td class="money card-accent">$35,000</td>
+          <td class="money">70%</td>
+          <td class="money card-accent4">Feb 6, 2026 (overdue)</td>
+          <td><span class="days-pill days-alert">~64 days</span></td>
+          <td><span class="badge badge-red">⚠ Critical</span></td>
+        </tr>
+        <tr>
+          <td><div class="deal-name">MJ Holding — New Deal<br><a href="https://app.hubspot.com/contacts/243159630/record/0-3/279378868982" target="_blank">↗ HubSpot</a></div></td>
+          <td><span class="badge badge-gray">New Deal</span></td>
+          <td class="money">$50,000</td>
+          <td class="money">$5,000</td>
+          <td class="money">10%</td>
+          <td class="money">May 29, 2026</td>
+          <td><span class="days-pill days-warn">37 days</span></td>
+          <td><span class="badge badge-amber">Watch</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section-label">Historical Performance (CEBA Pipeline)</div>
+  <div class="grid-4">
+    <div class="card">
+      <div class="card-label">Triton Midstream</div>
+      <div class="card-value card-accent" style="font-size:20px">WON ✓</div>
+      <div class="card-sub">$35,000 · Nov 2025</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Spectro Cloud</div>
+      <div class="card-value card-accent" style="font-size:20px">WON ✓</div>
+      <div class="card-sub">$42,000 · Dec 2025</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Nautical Fulfillment</div>
+      <div class="card-value card-accent" style="font-size:20px">WON ✓</div>
+      <div class="card-sub">$93,000 · Dec 2025</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Liquidpulse (CEBA)</div>
+      <div class="card-value card-accent" style="font-size:20px">WON ✓</div>
+      <div class="card-sub">$16,000 · Sep 2025</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SDR ACTIVITY — CALEB ===== -->
+<div id="tab-sdr" class="page">
+  <div class="page-title">SDR Activity Dashboard</div>
+  <div class="page-subtitle">Caleb Wilton · Target: 75 calls/day · 5 SDR→Sales Appointments/week</div>
+
+  <div class="kpi-row">
+    <div class="kpi-mini">
+      <div class="kpi-mini-label">Total Calls (All Time)</div>
+      <div class="kpi-mini-val card-accent">2,117</div>
+      <div class="kpi-mini-sub">In HubSpot system</div>
+    </div>
+    <div class="kpi-mini">
+      <div class="kpi-mini-label">Today's Calls (Mar 9)</div>
+      <div class="kpi-mini-val card-accent3">82</div>
+      <div class="kpi-mini-sub">Target: 75 · <span style="color:var(--accent)">✓ HIT</span></div>
+    </div>
+    <div class="kpi-mini">
+      <div class="kpi-mini-label">Calls (Mar 6)</div>
+      <div class="kpi-mini-val card-accent2">105</div>
+      <div class="kpi-mini-sub">Target: 75 · <span style="color:var(--accent)">✓ HIT</span></div>
+    </div>
+    <div class="kpi-mini">
+      <div class="kpi-mini-label">Calls (Feb 27)</div>
+      <div class="kpi-mini-val card-accent5">42</div>
+      <div class="kpi-mini-sub">Target: 75 · <span style="color:var(--accent4)">✗ MISS</span></div>
+    </div>
+    <div class="kpi-mini">
+      <div class="kpi-mini-label">SDR→Sales Appts (All)</div>
+      <div class="kpi-mini-val card-accent4">1</div>
+      <div class="kpi-mini-sub">Logged in HubSpot</div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <!-- Daily Volume Chart -->
+    <div class="card">
+      <div class="card-label">Daily Call Volume vs. Target (75/day)</div>
+      <div style="margin-top:12px">
+        <div class="tva-row">
+          <div class="tva-label">Mar 9</div>
+          <div class="tva-bar"><div class="tva-fill" style="width:100%;background:var(--accent)"></div></div>
+          <div class="tva-vals"><span style="color:var(--accent)">82</span> / 75</div>
+        </div>
+        <div class="tva-row">
+          <div class="tva-label">Mar 6</div>
+          <div class="tva-bar"><div class="tva-fill" style="width:100%;background:var(--accent)"></div></div>
+          <div class="tva-vals"><span style="color:var(--accent)">105</span> / 75</div>
+        </div>
+        <div class="tva-row">
+          <div class="tva-label">Feb 27</div>
+          <div class="tva-bar"><div class="tva-fill" style="width:56%;background:var(--accent4)"></div></div>
+          <div class="tva-vals"><span style="color:var(--accent4)">42</span> / 75</div>
+        </div>
+      </div>
+      <div style="margin-top:16px">
+        <div class="card-label">Weekly Appointment Target (5/week)</div>
+        <div class="tva-row">
+          <div class="tva-label">This Wk</div>
+          <div class="tva-bar"><div class="tva-fill" style="width:20%;background:var(--accent4)"></div></div>
+          <div class="tva-vals"><span style="color:var(--accent4)">1</span> / 5</div>
+        </div>
+      </div>
+      <div class="insight insight-warn">
+        <div class="insight-icon">📅</div>
+        <div class="insight-text">
+          <strong>Appointment gap:</strong> Only 1 SDR→Sales Appointment logged in HubSpot with outcome "Connected Unqualified" (Hydro, Mar 3). Weekly target is 5. Verify if appointments are being logged correctly — potential data gap.
+        </div>
+      </div>
+    </div>
+
+    <!-- Call Outcomes -->
+    <div class="card">
+      <div class="card-label">Call Outcomes — Mar 6 + Mar 9 Combined (187 calls)</div>
+      <div class="outcome-grid">
+        <div class="outcome-row">
+          <div class="outcome-icon">📵</div>
+          <div class="outcome-name">No Answer</div>
+          <div class="outcome-count card-accent4">141</div>
+          <div class="outcome-track"><div class="outcome-fill" style="width:75%;background:var(--accent4)"></div></div>
+          <div class="outcome-pct">75.4%</div>
+        </div>
+        <div class="outcome-row">
+          <div class="outcome-icon">✅</div>
+          <div class="outcome-name">Connected</div>
+          <div class="outcome-count card-accent">7</div>
+          <div class="outcome-track"><div class="outcome-fill" style="width:3.7%;background:var(--accent)"></div></div>
+          <div class="outcome-pct">3.7%</div>
+        </div>
+        <div class="outcome-row">
+          <div class="outcome-icon">❓</div>
+          <div class="outcome-name">Connected – Not Qualified</div>
+          <div class="outcome-count card-accent3">14</div>
+          <div class="outcome-track"><div class="outcome-fill" style="width:7.5%;background:var(--accent3)"></div></div>
+          <div class="outcome-pct">7.5%</div>
+        </div>
+        <div class="outcome-row">
+          <div class="outcome-icon">📬</div>
+          <div class="outcome-name">Left Voicemail</div>
+          <div class="outcome-count card-accent2">5</div>
+          <div class="outcome-track"><div class="outcome-fill" style="width:2.7%;background:var(--accent2)"></div></div>
+          <div class="outcome-pct">2.7%</div>
+        </div>
+        <div class="outcome-row">
+          <div class="outcome-icon">🚪</div>
+          <div class="outcome-name">Gatekeeper</div>
+          <div class="outcome-count card-accent5">2</div>
+          <div class="outcome-track"><div class="outcome-fill" style="width:1.1%;background:var(--accent5)"></div></div>
+          <div class="outcome-pct">1.1%</div>
+        </div>
+        <div class="outcome-row">
+          <div class="outcome-icon">🔁</div>
+          <div class="outcome-name">Received Referral</div>
+          <div class="outcome-count card-accent">1</div>
+          <div class="outcome-track"><div class="outcome-fill" style="width:0.5%;background:var(--accent)"></div></div>
+          <div class="outcome-pct">0.5%</div>
+        </div>
+        <div class="outcome-row">
+          <div class="outcome-icon">❌</div>
+          <div class="outcome-name">Wrong Number / Other</div>
+          <div class="outcome-count card-accent4">8</div>
+          <div class="outcome-track"><div class="outcome-fill" style="width:4.3%;background:var(--accent4)"></div></div>
+          <div class="outcome-pct">4.3%</div>
+        </div>
+        <div class="outcome-row">
+          <div class="outcome-icon">🏢</div>
+          <div class="outcome-name">No Longer with Company</div>
+          <div class="outcome-count card-accent3">2</div>
+          <div class="outcome-track"><div class="outcome-fill" style="width:1.1%;background:var(--accent3)"></div></div>
+          <div class="outcome-pct">1.1%</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-label">SDR Best Practice Benchmarks & Insights</div>
+  <div class="grid-3">
+    <div class="card">
+      <div class="card-label">📊 Connect Rate</div>
+      <div class="card-value card-accent3" style="font-size:28px">3.7%</div>
+      <div class="card-sub">7 connects / 187 calls</div>
+      <div class="insight insight-warn" style="margin-top:12px;padding:10px 12px">
+        <div class="insight-icon">💡</div>
+        <div class="insight-text"><strong>Industry avg: 6–8%.</strong> Below benchmark. Try varying call times (8–9am, 4–5pm local show highest connect rates). Review list quality and sequencing strategy.</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-label">🎯 Qualified Rate</div>
+      <div class="card-value card-accent" style="font-size:28px">0%</div>
+      <div class="card-sub">0 "Connected – Qualified" logged</div>
+      <div class="insight insight-warn" style="margin-top:12px;padding:10px 12px">
+        <div class="insight-icon">⚠️</div>
+        <div class="insight-text"><strong>No qualified connects recorded.</strong> Either qualification isn't being tracked in HubSpot or qualification conversations aren't converting. Review ICP criteria and call script opener.</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-label">📅 Appt. Conversion</div>
+      <div class="card-value card-accent5" style="font-size:28px">&lt;1%</div>
+      <div class="card-sub">1 appt / 187 calls tracked</div>
+      <div class="insight insight-warn" style="margin-top:12px;padding:10px 12px">
+        <div class="insight-icon">📌</div>
+        <div class="insight-text"><strong>Target: 1 appt per 15 connects.</strong> With 7 connects, we'd expect ~0.5 appts — so data may be correct, but logging needs to be consistent for accurate tracking.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-label">SDR Activity Best Practices</div>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-label">🔑 Caleb's Strengths</div>
+      <ul style="list-style:none;margin-top:12px;display:flex;flex-direction:column;gap:8px">
+        <li style="font-size:12px;color:var(--text2);display:flex;gap:8px"><span style="color:var(--accent)">✓</span> Hitting and exceeding daily call volume (82–105 calls on active days)</li>
+        <li style="font-size:12px;color:var(--text2);display:flex;gap:8px"><span style="color:var(--accent)">✓</span> Consistent outbound focus — 100% outbound calls</li>
+        <li style="font-size:12px;color:var(--text2);display:flex;gap:8px"><span style="color:var(--accent)">✓</span> Strong cadence on high-volume blitz days</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-label">🎯 Focus Areas to Improve</div>
+      <ul style="list-style:none;margin-top:12px;display:flex;flex-direction:column;gap:8px">
+        <li style="font-size:12px;color:var(--text2);display:flex;gap:8px"><span style="color:var(--accent4)">→</span> <strong style="color:var(--text)">HubSpot logging discipline:</strong> Log every appointment as "SDR to Sales Appointment" type — missing data undermines pipeline visibility</li>
+        <li style="font-size:12px;color:var(--text2);display:flex;gap:8px"><span style="color:var(--accent4)">→</span> <strong style="color:var(--text)">Call time optimization:</strong> Batch calls at 8–9am and 4–5pm for better connect rates</li>
+        <li style="font-size:12px;color:var(--text2);display:flex;gap:8px"><span style="color:var(--accent4)">→</span> <strong style="color:var(--text)">Use voicemail strategically:</strong> Only 5 VMs left — consider systematic VM + email combo to increase callback rate</li>
+        <li style="font-size:12px;color:var(--text2);display:flex;gap:8px"><span style="color:var(--accent4)">→</span> <strong style="color:var(--text)">Multi-touch sequences:</strong> Supplement calls with LinkedIn touches and email to increase total reach rate</li>
+        <li style="font-size:12px;color:var(--text2);display:flex;gap:8px"><span style="color:var(--accent4)">→</span> <strong style="color:var(--text)">ICP refinement:</strong> Track which industries / company sizes connect and qualify more frequently</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ===== LEAD DASHBOARD ===== -->
+<div id="tab-leads" class="page">
+  <div class="page-title">Lead Dashboard</div>
+  <div class="page-subtitle">Based on contact lead records · Total leads with lead status: 307</div>
+
+  <div class="kpi-row">
+    <div class="kpi-mini">
+      <div class="kpi-mini-label">Total Leads (DB)</div>
+      <div class="kpi-mini-val card-accent">307</div>
+      <div class="kpi-mini-sub">With hs_lead_status set</div>
+    </div>
+    <div class="kpi-mini">
+      <div class="kpi-mini-label">New Leads (Last 30d)</div>
+      <div class="kpi-mini-val card-accent2">~32</div>
+      <div class="kpi-mini-sub">Created since Feb 9</div>
+    </div>
+    <div class="kpi-mini">
+      <div class="kpi-mini-label">Open Leads</div>
+      <div class="kpi-mini-val card-accent3">~15</div>
+      <div class="kpi-mini-sub">Status = OPEN (active)</div>
+    </div>
+    <div class="kpi-mini">
+      <div class="kpi-mini-label">Untouched Leads</div>
+      <div class="kpi-mini-val card-accent4">~120</div>
+      <div class="kpi-mini-sub">0 contact attempts</div>
+    </div>
+    <div class="kpi-mini">
+      <div class="kpi-mini-label">Avg Touches (OPEN)</div>
+      <div class="kpi-mini-val card-accent5">4.2</div>
+      <div class="kpi-mini-sub">Active lead outreaches</div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <!-- Lead Status Funnel -->
+    <div class="card">
+      <div class="card-label">Lead Status Snapshot</div>
+      <div class="funnel">
+        <div class="funnel-step">
+          <div style="width:10px;height:10px;border-radius:2px;background:var(--text3);flex-shrink:0"></div>
+          <div class="funnel-step-name">NEW</div>
+          <div class="funnel-step-bar"><div class="funnel-step-fill" style="width:88%;background:var(--text3)"></div></div>
+          <div class="funnel-step-count" style="color:var(--text3)">~270</div>
+        </div>
+        <div class="funnel-step">
+          <div style="width:10px;height:10px;border-radius:2px;background:var(--accent2);flex-shrink:0"></div>
+          <div class="funnel-step-name">OPEN</div>
+          <div class="funnel-step-bar"><div class="funnel-step-fill" style="width:5%;background:var(--accent2)"></div></div>
+          <div class="funnel-step-count" style="color:var(--accent2)">~15</div>
+        </div>
+        <div class="funnel-step">
+          <div style="width:10px;height:10px;border-radius:2px;background:var(--accent3);flex-shrink:0"></div>
+          <div class="funnel-step-name">IN PROGRESS</div>
+          <div class="funnel-step-bar"><div class="funnel-step-fill" style="width:2%;background:var(--accent3)"></div></div>
+          <div class="funnel-step-count" style="color:var(--accent3)">~4</div>
+        </div>
+        <div class="funnel-step">
+          <div style="width:10px;height:10px;border-radius:2px;background:var(--accent);flex-shrink:0"></div>
+          <div class="funnel-step-name">CONNECTED</div>
+          <div class="funnel-step-bar"><div class="funnel-step-fill" style="width:1%;background:var(--accent)"></div></div>
+          <div class="funnel-step-count" style="color:var(--accent)">~2</div>
+        </div>
+      </div>
+      <div class="insight insight-warn" style="margin-top:12px">
+        <div class="insight-icon">⚠️</div>
+        <div class="insight-text">
+          <strong>88% of leads are "NEW" with no status progression.</strong> This suggests a large untouched or under-worked pool. Prioritize leads created 30–60 days ago that have had 0–2 touches — these are most actionable.
+        </div>
+      </div>
+    </div>
+
+    <!-- Lead Creation Trend -->
+    <div class="card">
+      <div class="card-label">Lead Creation by Month (2025–2026)</div>
+      <div class="bar-chart">
+        <div class="bar-row">
+          <div class="bar-label">March 2026 (to date)</div>
+          <div class="bar-track"><div class="bar-fill" style="width:15%;background:var(--accent)"></div></div>
+          <div class="bar-val card-accent">3</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">February 2026</div>
+          <div class="bar-track"><div class="bar-fill" style="width:35%;background:var(--accent2)"></div></div>
+          <div class="bar-val card-accent2">10</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">January 2026</div>
+          <div class="bar-track"><div class="bar-fill" style="width:20%;background:var(--accent3)"></div></div>
+          <div class="bar-val card-accent3">7</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">December 2025</div>
+          <div class="bar-track"><div class="bar-fill" style="width:40%;background:var(--accent5)"></div></div>
+          <div class="bar-val card-accent5">15</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">November 2025</div>
+          <div class="bar-track"><div class="bar-fill" style="width:100%;background:var(--accent4)"></div></div>
+          <div class="bar-val card-accent4">~120+</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">October–Nov 4 2025</div>
+          <div class="bar-track"><div class="bar-fill" style="width:50%;background:var(--text3)"></div></div>
+          <div class="bar-val" style="color:var(--text3)">~60+</div>
+        </div>
+      </div>
+      <div class="insight" style="margin-top:12px">
+        <div class="insight-icon">📊</div>
+        <div class="insight-text">
+          <strong>Large Nov 2025 cohort needs follow-up.</strong> Many of these leads are 4+ months old. Set a re-engagement sequence for any Nov lead with fewer than 3 touches.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-label">Active Lead Detail — Touch Tracker (Top 7-touch Focus)</div>
+  <div class="card overflow-x">
+    <div style="font-size:11px;color:var(--text3);margin-bottom:12px;font-family:'DM Mono',monospace">Goal: 7 touches per lead before disqualifying. Each ■ = 1 recorded touch. Purple = exceeded 7.</div>
+    <table class="leads-table">
+      <thead>
+        <tr>
+          <th>Lead Name</th>
+          <th>Status</th>
+          <th>Owner</th>
+          <th>Created</th>
+          <th>Last Contacted</th>
+          <th>Touches</th>
+          <th>Progress to 7</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="leads-tbody">
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section-label">Lead Best Practice Recommendations</div>
+  <div class="grid-3">
+    <div class="card">
+      <div class="card-label">🎯 7-Touch Rule</div>
+      <div class="card-sub" style="margin-top:8px;line-height:1.7">
+        Research shows most B2B decisions require <strong style="color:var(--text)">8–12 touches</strong> before a meeting is booked. Your 7-touch target is solid. Recommended mix:<br><br>
+        Touch 1–2: Cold call<br>
+        Touch 3: Voicemail + Email<br>
+        Touch 4: LinkedIn connect<br>
+        Touch 5: Call with personalized opener<br>
+        Touch 6: Value-add email (case study/ROI)<br>
+        Touch 7: Final "break-up" call
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-label">📋 Lead Hygiene Flags</div>
+      <div class="funnel" style="margin-top:8px;gap:6px">
+        <div class="funnel-step" style="border-color:rgba(248,113,113,0.2)">
+          <span style="color:var(--accent4)">⚠</span>
+          <div class="funnel-step-name" style="font-size:11px">~120 leads with 0 touches — immediate action</div>
+        </div>
+        <div class="funnel-step" style="border-color:rgba(245,158,11,0.2)">
+          <span style="color:var(--accent3)">↻</span>
+          <div class="funnel-step-name" style="font-size:11px">~40 leads 4+ months old with &lt;3 touches</div>
+        </div>
+        <div class="funnel-step" style="border-color:rgba(56,189,248,0.2)">
+          <span style="color:var(--accent2)">✓</span>
+          <div class="funnel-step-name" style="font-size:11px">~15 "OPEN" leads being actively worked</div>
+        </div>
+        <div class="funnel-step" style="border-color:rgba(74,222,128,0.2)">
+          <span style="color:var(--accent)">★</span>
+          <div class="funnel-step-name" style="font-size:11px">Top leads: Matt Wicichowski (34 touches!)</div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-label">📈 Velocity Insights</div>
+      <ul style="list-style:none;margin-top:8px;display:flex;flex-direction:column;gap:8px">
+        <li style="font-size:12px;color:var(--text2);line-height:1.5"><span style="color:var(--accent)">→</span> <strong style="color:var(--text)">Speed-to-contact:</strong> Best practice is contact within 5 min of lead creation. Aim to touch every new lead same-day.</li>
+        <li style="font-size:12px;color:var(--text2);line-height:1.5"><span style="color:var(--accent)">→</span> <strong style="color:var(--text)">Re-engagement:</strong> Segment Nov/Dec 2025 leads for dedicated re-activation blitz (use Caleb's call volume!).</li>
+        <li style="font-size:12px;color:var(--text2);line-height:1.5"><span style="color:var(--accent)">→</span> <strong style="color:var(--text)">Lead scoring:</strong> Consider scoring leads by industry, company size, and engagement to prioritize Caleb's calling list.</li>
+        <li style="font-size:12px;color:var(--text2);line-height:1.5"><span style="color:var(--accent)">→</span> <strong style="color:var(--text)">Disqualification SLA:</strong> Leads with 7+ touches and no response should be moved to "Unqualified" to keep the pipeline clean.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script>
+function switchTab(tab) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// Lead touch tracker data
+const leads = [
+  { name: "Matt Wicichowski", status: "NEW", owner: "Ryan", created: "Oct 30, 2025", lastContact: "Mar 5, 2026", touches: 34 },
+  { name: "Jingwen Zhang", status: "NEW", owner: "Ryan", created: "Nov 19, 2025", lastContact: "Feb 10, 2026", touches: 11 },
+  { name: "Alex Rushing", status: "NEW", owner: "Ryan", created: "Nov 10, 2025", lastContact: "Dec 22, 2025", touches: 13 },
+  { name: "Corey Bacigalupo", status: "OPEN", owner: "Ryan", created: "Nov 18, 2025", lastContact: "Feb 16, 2026", touches: 11 },
+  { name: "Joseph Pomponio", status: "IN_PROGRESS", owner: "Caleb", created: "Jan 2, 2026", lastContact: "Feb 10, 2026", touches: 9 },
+  { name: "Dr. Xavier Kohll", status: "OPEN", owner: "Ryan", created: "Feb 4, 2026", lastContact: "Mar 3, 2026", touches: 6 },
+  { name: "Barbie Barta", status: "OPEN", owner: "Ryan", created: "Feb 20, 2026", lastContact: "Mar 5, 2026", touches: 6 },
+  { name: "Randy Galgas", status: "NEW", owner: "Ryan", created: "Dec 18, 2025", lastContact: "Feb 20, 2026", touches: 7 },
+  { name: "Jesse Bounds", status: "NEW", owner: "Ryan", created: "Nov 11, 2025", lastContact: "Feb 2, 2026", touches: 5 },
+  { name: "John Dilsaver", status: "OPEN", owner: "Ryan", created: "Nov 21, 2025", lastContact: "Jan 15, 2026", touches: 6 },
+  { name: "Sean Lee", status: "NEW", owner: "Ryan", created: "Jan 9, 2026", lastContact: "Jan 28, 2026", touches: 4 },
+  { name: "Juan Jaime Garza", status: "OPEN", owner: "Ryan", created: "Feb 20, 2026", lastContact: "Feb 27, 2026", touches: 5 },
+  { name: "Nancy Rumfelt", status: "IN_PROGRESS", owner: "Ryan", created: "Jan 9, 2026", lastContact: "Jan 15, 2026", touches: 3 },
+  { name: "Darrin Johnson", status: "OPEN", owner: "Ryan", created: "Dec 23, 2025", lastContact: "Jan 28, 2026", touches: 4 },
+  { name: "Tristan Lory", status: "NEW", owner: "Ryan", created: "Mar 4, 2026", lastContact: "Mar 4, 2026", touches: 2 },
+];
+
+function getStatusBadge(s) {
+  const map = {
+    NEW: 'badge-gray', OPEN: 'badge-blue', IN_PROGRESS: 'badge-amber',
+    CONNECTED: 'badge-green', UNQUALIFIED: 'badge-red'
+  };
+  return `<span class="badge ${map[s] || 'badge-gray'}">${s}</span>`;
+}
+
+function getTouchBar(t) {
+  let html = '<div class="touch-bar">';
+  for (let i = 0; i < 7; i++) {
+    if (i < t && t <= 7) html += '<div class="touch-dot filled"></div>';
+    else if (i < 7 && t > 7) html += '<div class="touch-dot overfull"></div>';
+    else html += '<div class="touch-dot"></div>';
+  }
+  html += '</div>';
+  return html;
+}
+
+function getAction(touches, status) {
+  if (touches === 0) return '<span class="badge badge-red">🚨 First Touch</span>';
+  if (touches < 3) return '<span class="badge badge-amber">📞 Follow Up</span>';
+  if (touches < 7) return '<span class="badge badge-blue">🔄 Continue</span>';
+  if (status === 'OPEN' || status === 'IN_PROGRESS') return '<span class="badge badge-purple">⚡ Close/Qualify</span>';
+  return '<span class="badge badge-gray">✓ DQ Review</span>';
+}
+
+const tbody = document.getElementById('leads-tbody');
+leads.forEach(l => {
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><strong>${l.name}</strong></td>
+    <td>${getStatusBadge(l.status)}</td>
+    <td style="color:var(--text3)">${l.owner}</td>
+    <td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text3)">${l.created}</td>
+    <td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text2)">${l.lastContact || '—'}</td>
+    <td><span style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:${l.touches>=7?'var(--accent5)':l.touches>=4?'var(--accent)':'var(--accent4)'}">${l.touches}</span></td>
+    <td>${getTouchBar(l.touches)}</td>
+    <td>${getAction(l.touches, l.status)}</td>
+  `;
+  tbody.appendChild(tr);
+});
+</script>
+</body>
+</html>
