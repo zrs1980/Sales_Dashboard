@@ -1,0 +1,9 @@
+{
+  "name": "siba-dashboard",
+  "version": "1.0.0",
+  "description": "SIBA Sales Command Center — Live HubSpot Dashboard",
+  "private": true,
+  "engines": {
+    "node": ">=18"
+  }
+}
